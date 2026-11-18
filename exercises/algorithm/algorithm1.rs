@@ -2,8 +2,6 @@
 	single linked list merge
 	This problem requires you to merge two ordered singly linked lists into one ordered singly linked list
 */
-// I AM NOT DONE
-
 use std::fmt::{self, Display, Formatter};
 use std::ptr::NonNull;
 use std::vec::*;
@@ -69,14 +67,56 @@ impl<T> LinkedList<T> {
             },
         }
     }
-	pub fn merge(list_a:LinkedList<T>,list_b:LinkedList<T>) -> Self
+	pub fn merge(list_a: LinkedList<T>, list_b: LinkedList<T>) -> Self
+	where
+		T: Ord,
 	{
-		//TODO
-		Self {
-            length: 0,
-            start: None,
-            end: None,
-        }
+		let mut list_a = list_a;
+		let mut list_b = list_b;
+		let mut merged = Self::new();
+
+		while list_a.start.is_some() || list_b.start.is_some() {
+			let take_a = match (list_a.start, list_b.start) {
+				(Some(a), Some(b)) => unsafe { a.as_ref().val <= b.as_ref().val },
+				(Some(_), None) => true,
+				_ => false,
+			};
+			let node = if take_a {
+				list_a.detach_front()
+			} else {
+				list_b.detach_front()
+			};
+			if let Some(node) = node {
+				merged.attach(node);
+			}
+		}
+
+		merged
+	}
+
+	fn detach_front(&mut self) -> Option<NonNull<Node<T>>> {
+		let node = self.start?;
+		unsafe {
+			self.start = (*node.as_ptr()).next;
+			(*node.as_ptr()).next = None;
+		}
+		if self.start.is_none() {
+			self.end = None;
+		}
+		self.length -= 1;
+		Some(node)
+	}
+
+	fn attach(&mut self, node: NonNull<Node<T>>) {
+		unsafe {
+			(*node.as_ptr()).next = None;
+		}
+		match self.end {
+			None => self.start = Some(node),
+			Some(end) => unsafe { (*end.as_ptr()).next = Some(node) },
+		}
+		self.end = Some(node);
+		self.length += 1;
 	}
 }
 
